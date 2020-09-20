@@ -24,16 +24,15 @@ import io.kubernetes.client.proto.Meta.DeleteOptions;
 import io.kubernetes.client.proto.Meta.Status;
 import io.kubernetes.client.proto.Runtime.TypeMeta;
 import io.kubernetes.client.proto.Runtime.Unknown;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import okhttp3.MediaType;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import org.apache.commons.codec.binary.Hex;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.*;
 
 public class ProtoClient {
   /**
@@ -62,8 +61,8 @@ public class ProtoClient {
   private ApiClient apiClient;
   // Magic number for the beginning of proto encoded.
   // https://github.com/kubernetes/apimachinery/blob/release-1.13/pkg/runtime/serializer/protobuf/protobuf.go#L44
-  private static final byte[] MAGIC = new byte[] {0x6b, 0x38, 0x73, 0x00};
-  private static final String MEDIA_TYPE = "application/vnd.kubernetes.protobuf";
+  public static final byte[] MAGIC = new byte[] {0x6b, 0x38, 0x73, 0x00};
+  public static final String MEDIA_TYPE = "application/vnd.kubernetes.protobuf";
 
   /** Simple Protocol Budder API client constructor, uses default configuration */
   public ProtoClient() {
@@ -106,7 +105,18 @@ public class ProtoClient {
    */
   public <T extends Message> ObjectOrStatus<T> get(T.Builder builder, String path)
       throws ApiException, IOException {
-    return request(builder, path, "GET", null, null, null);
+    return get(builder,path,Collections.emptyList());
+  }
+  /**
+   * Get a Kubernetes API object using protocol buffer encoding.
+   *
+   * @param builder The appropriate Builder for the object received from the request.
+   * @param path The URL path to call (e.g. /api/v1/namespaces/default/pods/pod-name)
+   * @return An ObjectOrStatus which contains the Object requested, or a Status about the request.
+   */
+  public <T extends Message> ObjectOrStatus<T> get(T.Builder builder, String path,List<Pair> collectionQueryParams)
+          throws ApiException, IOException {
+    return request(builder, path, collectionQueryParams,"GET", null, null, null);
   }
 
   /**
@@ -133,7 +143,7 @@ public class ProtoClient {
    */
   public <T extends Message> ObjectOrStatus<T> create(
       T obj, String path, String apiVersion, String kind) throws ApiException, IOException {
-    return request(obj.newBuilderForType(), path, "POST", obj, apiVersion, kind);
+    return request(obj.newBuilderForType(), path, Collections.emptyList(),"POST", obj, apiVersion, kind);
   }
 
   /**
@@ -147,7 +157,7 @@ public class ProtoClient {
    */
   public <T extends Message> ObjectOrStatus<T> update(
       T obj, String path, String apiVersion, String kind) throws ApiException, IOException {
-    return request(obj.newBuilderForType(), path, "PUT", obj, apiVersion, kind);
+    return request(obj.newBuilderForType(), path, Collections.emptyList(),"PUT", obj, apiVersion, kind);
   }
 
   /**
@@ -161,7 +171,7 @@ public class ProtoClient {
    */
   public <T extends Message> ObjectOrStatus<T> merge(
       T obj, String path, String apiVersion, String kind) throws ApiException, IOException {
-    return request(obj.newBuilderForType(), path, "PATCH", obj, apiVersion, kind);
+    return request(obj.newBuilderForType(), path, Collections.emptyList(),"PATCH", obj, apiVersion, kind);
   }
 
   /**
@@ -173,7 +183,7 @@ public class ProtoClient {
    */
   public <T extends Message> ObjectOrStatus<T> delete(T.Builder builder, String path)
       throws ApiException, IOException {
-    return request(builder, path, "DELETE", null, null, null);
+    return request(builder, path, Collections.emptyList(),"DELETE", null, null, null);
   }
 
   /**
@@ -220,6 +230,7 @@ public class ProtoClient {
    * @param builder The appropriate Builder for the object received from the request.
    * @param method The HTTP method (e.g. GET) for this request.
    * @param path The URL path to call (e.g. /api/v1/namespaces/default/pods/pod-name)
+   * @param collectionQueryParams The collection query parameters
    * @param body The body to send with the request (optional)
    * @param apiVersion The 'apiVersion' to use when encoding, required if body is non-null, ignored
    *     otherwise.
@@ -228,18 +239,38 @@ public class ProtoClient {
    * @return An ObjectOrStatus which contains the Object requested, or a Status about the request.
    */
   public <T extends Message> ObjectOrStatus<T> request(
-      T.Builder builder, String path, String method, T body, String apiVersion, String kind)
-      throws ApiException, IOException {
+          T.Builder builder, String path, List<Pair> collectionQueryParams, String method, T body, String apiVersion, String kind) throws IOException, ApiException {
+    Request request = buildRequest(path, collectionQueryParams, method, body, apiVersion, kind);
+    return getObjectOrStatusFromServer(builder, request);
+  }
+
+  /**
+   * Generic protocol buffer based HTTP request. Not intended for general consumption, but public
+   * for advance use cases.
+   *
+   * @param path The URL path to call (e.g. /api/v1/namespaces/default/pods/pod-name)
+   * @param collectionQueryParams The collection query parameters
+   * @param method The HTTP method (e.g. GET) for this request.
+   * @param body The body to send with the request (optional)
+   * @param apiVersion The 'apiVersion' to use when encoding, required if body is non-null, ignored
+   *     otherwise.
+   * @param kind The 'kind' field to use when encoding, required if body is non-null, ignored
+   *     otherwise.
+   * @return OkHttp Request
+   */
+  public <T extends Message> Request buildRequest(String path, List<Pair> collectionQueryParams, String method, T body, String apiVersion, String kind)
+      throws ApiException {
     HashMap<String, String> headers = new HashMap<>();
     headers.put("Content-Type", MEDIA_TYPE);
     headers.put("Accept", MEDIA_TYPE);
+    headers.put("Origin", apiClient.getBasePath());
     String[] localVarAuthNames = new String[] {"BearerToken"};
     Request request =
         apiClient.buildRequest(
             path,
             method,
-            new ArrayList<Pair>(),
-            new ArrayList<Pair>(),
+            new ArrayList<>(),
+            collectionQueryParams,
             null,
             headers,
             new HashMap<String, String>(),
@@ -274,7 +305,8 @@ public class ProtoClient {
           throw new ApiException("Unknown proto client API method: " + method);
       }
     }
-    return getObjectOrStatusFromServer(builder, request);
+    return request;
+
   }
 
   private <T extends Message> ObjectOrStatus<T> getObjectOrStatusFromServer(

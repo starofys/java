@@ -225,7 +225,7 @@
     </dependencies>
   </dependencyManagement>
 
-  <distributionManagement>
+  <!--<distributionManagement>
     <snapshotRepository>
       <id>ossrh</id>
       <url>https://oss.sonatype.org/content/repositories/snapshots</url>
@@ -236,6 +236,17 @@
       <url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
       <layout>default</layout>
     </repository>
+  </distributionManagement>-->
+
+  <distributionManagement>
+    <repository>
+      <id>ysf-releases</id>
+      <url>https://packages.aliyun.com/maven/repository/2004340-release-umJnAu/</url>
+    </repository>
+    <snapshotRepository>
+      <id>ysf-snapshots</id>
+      <url>https://packages.aliyun.com/maven/repository/2004340-snapshot-wEKPVl/</url>
+    </snapshotRepository>
   </distributionManagement>
 
   <build>
