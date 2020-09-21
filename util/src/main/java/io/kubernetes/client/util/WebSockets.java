@@ -21,9 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import javax.annotation.Nullable;
 import okhttp3.Call;
 import okhttp3.Request;
@@ -84,15 +82,20 @@ public class WebSockets {
       throws ApiException, IOException {
     stream(path, method, new ArrayList<Pair>(), client, listener);
   }
+    public static void stream(
+            String path, String method, List<Pair> queryParams, ApiClient client, SocketListener listener)
+            throws ApiException, IOException {
+      stream(path,method,new HashMap<>(),new ArrayList<>(),client,listener);
+    }
 
   public static void stream(
-      String path, String method, List<Pair> queryParams, ApiClient client, SocketListener listener)
+          String path, String method, Map<String,String> headers, List<Pair> queryParams, ApiClient client, SocketListener listener)
       throws ApiException, IOException {
 
-    HashMap<String, String> headers = new HashMap<String, String>();
     headers.put(STREAM_PROTOCOL_HEADER, V4_STREAM_PROTOCOL);
     headers.put(HttpHeaders.CONNECTION, HttpHeaders.UPGRADE);
     headers.put(HttpHeaders.UPGRADE, SPDY_3_1);
+//    headers.put(HttpHeaders.ORIGIN, client.getBasePath());
     String[] localVarAuthNames = new String[] {"BearerToken"};
 
     Request request =
@@ -107,6 +110,7 @@ public class WebSockets {
             new HashMap<String, Object>(),
             localVarAuthNames,
             null);
+    System.out.println(request.url().toString());
     streamRequest(request, client, listener);
   }
 
