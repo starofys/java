@@ -95,7 +95,6 @@ public class WebSockets {
     headers.put(STREAM_PROTOCOL_HEADER, V4_STREAM_PROTOCOL);
     headers.put(HttpHeaders.CONNECTION, HttpHeaders.UPGRADE);
     headers.put(HttpHeaders.UPGRADE, SPDY_3_1);
-//    headers.put(HttpHeaders.ORIGIN, client.getBasePath());
     String[] localVarAuthNames = new String[] {"BearerToken"};
 
     Request request =
