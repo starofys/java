@@ -26,10 +26,15 @@
             <version>10.0.0</version>
         </dependency>
         <dependency>
+            <artifactId>k8s-proto</artifactId>
+            <groupId>xin.yysf.k8s</groupId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <!--<dependency>
             <groupId>io.kubernetes</groupId>
             <artifactId>client-java-proto</artifactId>
             <version>10.0.0</version>
-        </dependency>
+        </dependency>-->
         <dependency>
             <groupId>org.yaml</groupId>
             <artifactId>snakeyaml</artifactId>
