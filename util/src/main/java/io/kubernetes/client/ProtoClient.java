@@ -103,9 +103,9 @@ public class ProtoClient {
    * @param path The URL path to call (e.g. /api/v1/namespaces/default/pods/pod-name)
    * @return An ObjectOrStatus which contains the Object requested, or a Status about the request.
    */
-  public <T extends Message> ObjectOrStatus<T> get(T.Builder builder, String path)
-      throws ApiException, IOException {
-    return get(builder,path,Collections.emptyList());
+  public <T extends Message> ObjectOrStatus<T> get(T.Builder builder, String path,List<Pair> collectionQueryParams)
+          throws ApiException, IOException {
+    return request(builder, path, collectionQueryParams,"GET", null, null, null);
   }
   /**
    * Get a Kubernetes API object using protocol buffer encoding.
@@ -114,9 +114,9 @@ public class ProtoClient {
    * @param path The URL path to call (e.g. /api/v1/namespaces/default/pods/pod-name)
    * @return An ObjectOrStatus which contains the Object requested, or a Status about the request.
    */
-  public <T extends Message> ObjectOrStatus<T> get(T.Builder builder, String path,List<Pair> collectionQueryParams)
+  public <T extends Message> ObjectOrStatus<T> get(T.Builder builder, String path)
           throws ApiException, IOException {
-    return request(builder, path, collectionQueryParams,"GET", null, null, null);
+    return get(builder,path,Collections.emptyList());
   }
 
   /**
@@ -249,7 +249,7 @@ public class ProtoClient {
    * for advance use cases.
    *
    * @param path The URL path to call (e.g. /api/v1/namespaces/default/pods/pod-name)
-   * @param collectionQueryParams The collection query parameters
+   * @param queryParams The collection query parameters
    * @param method The HTTP method (e.g. GET) for this request.
    * @param body The body to send with the request (optional)
    * @param apiVersion The 'apiVersion' to use when encoding, required if body is non-null, ignored
@@ -258,7 +258,7 @@ public class ProtoClient {
    *     otherwise.
    * @return OkHttp Request
    */
-  public <T extends Message> Request buildRequest(String path, List<Pair> collectionQueryParams, String method, T body, String apiVersion, String kind)
+  public <T extends Message> Request buildRequest(String path, List<Pair> queryParams, String method, T body, String apiVersion, String kind)
       throws ApiException {
     HashMap<String, String> headers = new HashMap<>();
     headers.put("Content-Type", MEDIA_TYPE);
@@ -269,8 +269,8 @@ public class ProtoClient {
         apiClient.buildRequest(
             path,
             method,
+            queryParams,
             new ArrayList<>(),
-            collectionQueryParams,
             null,
             headers,
             new HashMap<String, String>(),
